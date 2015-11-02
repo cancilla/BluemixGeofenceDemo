@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!-- begin_generated_IBM_copyright_prolog                             -->
+<!--                                                                  -->
+<!-- This is an automatically generated copyright prolog.             -->
+<!-- After initializing,  DO NOT MODIFY OR MOVE                       -->
+<!-- **************************************************************** -->
+<!-- Licensed Materials - Property of IBM                             -->
+<!-- 5724-Y95                                                         -->
+<!-- (C) Copyright IBM Corp.  2015, 2015    All Rights Reserved.      -->
+<!-- US Government Users Restricted Rights - Use, duplication or      -->
+<!-- disclosure restricted by GSA ADP Schedule Contract with          -->
+<!-- IBM Corp.                                                        -->
+<!--                                                                  -->
+<!-- end_generated_IBM_copyright_prolog                               -->
+<html>
+<head>
+<title>Streams/Bluemix Geofence Demo</title>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+<meta charset="utf-8">
+ <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+ <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+ <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<style>
+html,body,#map-canvas {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+}
+</style>
+</head>
+<body>
+	<div id="title">
+		<h2 align="center">Entity Detection</h2>
+		<p align="center"><b>Monitor activity within fenced areas</b></p> 
+	</div>
+	<button id="showMore" type="button" class="btn btn-info" data-toggle="collapse" data-target="#bluemix_info">Bluemix Architurecture</button>
+	<div><br /></div>
+	<div id="bluemix_info" class="collapse">
+		<p>In this demo, the markers represent GPS coordinates captured via a device (i.e. mobile phone) and the polygons represent geofences.
+		If a geofence contains a marker (or entity), the fence will turn red. Whenever the fence is empty (i.e. no markers fall within the fenced in area), 
+		the fence will turn blue. <br />
+		<br />
+		
+		This application is running entirely on the IBM Bluemix cloud environment. The architecture of the application is as follows:
+		</p>
+		<ul>
+			<li>GPS coordinates are sent to a messaging server using the MQTT protocol. This is facilitated using the IoT Bluemix service</li>
+			<li>The Streams application subscribes to the IoT messaging server and ingests the GPS data in real-time. The application uses the "Geofence" operator to 
+			analyze the incoming data and determines when an "entity" enters or exists a geofence. This the results of this analysis is sent to the MessageHub
+			service, which is backed by Kafka. The "Streaming Analytics" Bluemix service enables users to quickly setup a Streams instance and launch Streaming applications.</li>
+			<li>The MessageHub Bluemix service enables communication between loosely coupled Bluemix services. For this application, the MessageHub is being used to
+			allow the Web application to consume the output of the Streams application.</li>
+			<li>The web application is a "Liberty for Java" application that is hosted on Bluemix.</li>
+		</ul>
+		<img style="display: block; margin-left:auto; margin-right: auto; margin: 0 auto" alt="Architecture" src="insight_2015_demo_arch.jpg" width="830" height="341"/>
+	</div>
+	<button id="showMore" type="button" class="btn btn-info" data-toggle="collapse" data-target="#spl_info">SPL Graph</button>
+	<div><br /></div>
+	<div id="spl_info" class="collapse">
+		<img style="display: block; margin-left:auto; margin-right: auto; margin: 0 auto" alt="Architecture" src="insight_2015_demo_spl.jpg" />
+	</div>
+	<div id="map-canvas"></div>
+	<script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+	<script src="js/map.js"></script>
+
+</body>
+</html>
+

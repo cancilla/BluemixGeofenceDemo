@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<!-- begin_generated_IBM_copyright_prolog                             -->
+<!--                                                                  -->
+<!-- This is an automatically generated copyright prolog.             -->
+<!-- After initializing,  DO NOT MODIFY OR MOVE                       -->
+<!-- **************************************************************** -->
+<!-- Licensed Materials - Property of IBM                             -->
+<!-- 5724-Y95                                                         -->
+<!-- (C) Copyright IBM Corp.  2015, 2015    All Rights Reserved.      -->
+<!-- US Government Users Restricted Rights - Use, duplication or      -->
+<!-- disclosure restricted by GSA ADP Schedule Contract with          -->
+<!-- IBM Corp.                                                        -->
+<!--                                                                  -->
+<!-- end_generated_IBM_copyright_prolog                               -->
+<html>
+<head>
+<title>Simple Map</title>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+<meta charset="utf-8">
+ <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+ <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+ <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<style>
+html,body,#map-canvas {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+}
+</style>
+</head>
+<body>
+	<div id="title">
+		<h2 align="center">Entity Detection</h2>
+		<p align="center"><b>Monitor activity within fenced areas</b></p> 
+	</div>
+	<button id="resetFences" type="button" class="btn btn-info" onclick="resetFences()">Reset Fences</button>
+	<div id="map-canvas"></div>
+	<script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+	<script src="js/map.js"></script>
+	<script>
+		function resetFences()
+		{
+			for(var fenceID in polygonMap) {
+				if(fenceID != "Yonge-Dundas" && fenceID != "Art-Gallery")
+				{
+					var msg = "\"" + fenceID + "\", 0, \"\"";
+		
+					var url = window.location.protocol + '//' + window.location.hostname + '/api/jax-rs/updateFence'; 
+					// construct HTTP request and send 
+					var xhttp = new XMLHttpRequest();
+					xhttp.open("POST", url, true);
+					xhttp.send(msg);						
+				}
+			}
+		}	
+
+		function guidGenerator() {
+		    var S4 = function() {
+		       return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+		    };
+		    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+		}
+		
+			function newPolygonAdded(evt) {
+				var transform = evt.feature.geometry.transform(map.getProjectionObject(), new OpenLayers.Projection("EPSG:4326"));
+				var msg = "\"" + guidGenerator() + "\", 1, \"POLYGON((";
+				
+				var verts = transform.getVertices();
+				for(var i = 0; i < verts.length; i++) {
+					msg += verts[i].x + " " + verts[i].y;
+					
+					if(i+1 < verts.length)
+						msg += ",";
+				}				
+				
+				msg += "))\"";
+				
+				//var url = location.protocol + '//' + location.hostname + '/api/jax-rs/updateFence';
+				var url = window.location.protocol + '//' + window.location.hostname + '/api/jax-rs/updateFence'; 
+				// construct HTTP request and send 
+				var xhttp = new XMLHttpRequest();
+				xhttp.open("POST", url, true);
+				xhttp.send(msg);				
+				
+				console.log("sent fence: " + msg);
+			}
+
+			//void polygonEdito = new OpenLayers.Control.DrawFeature(vectors, OpenLay)
+			var polygonEdit = new OpenLayers.Control.DrawFeature(vectors, OpenLayers.Handler.Polygon,
+				{eventListeners: { "featureadded": newPolygonAdded }}
+			);
+
+			var isDrawActive = false;
+			map.addControl(polygonEdit);   
+
+						
+			window.onkeyup = function(e) {
+				var key = e.keycode ? e.keycode : e.which;
+				
+				if(key == 68) {
+					if(isDrawActive == true) {
+						polygonEdit.deactivate();
+						isDrawActive = false;				
+						
+						console.log("drawing disabled, panning enabled");		
+					} else {
+						polygonEdit.activate();
+						isDrawActive = true;
+						
+						console.log("drawing enabled, panning disabled");
+					}
+				} 
+			}		
+		
+	</script>
+</body>
+</html>
+
