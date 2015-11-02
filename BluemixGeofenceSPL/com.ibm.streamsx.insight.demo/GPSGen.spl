@@ -1,0 +1,60 @@
+namespace com.ibm.streamsx.insight.demo ;
+
+use com.ibm.streamsx.messaging.kafka::KafkaConsumer ;
+use com.ibm.streamsx.messaging.kafka::KafkaProducer ;
+use com.ibm.streams.geospatial.ext::* ;
+use com.ibm.streamsx.json::TupleToJSON ;
+use com.ibm.streamsx.messaging.mqtt::MQTTSink ;
+use com.ibm.streamsx.messaging.mqtt::MQTTSource ;
+
+composite GPSSimulator
+{
+	param
+		expression<int32> $numEntities :(int32) getSubmissionTimeValue("numEntities",
+			"100") ;
+	graph
+		(stream<rstring id, rstring wkt, uint32 updateAction, rstring note,
+			MARKER_TYPE markerType> EntityStream) as EntityGenerator = Custom()
+		{
+			logic
+				onProcess :
+				{
+					while(! isShutdown())
+					{
+					// Randomly generate entities in Toronto
+						float64 latitude = randomLatitude(43.6655205718189, 43.650990118340125) ;
+						float64 longitude = randomLongitude(-79.41240691929124, -79.35404205112718) ;
+						rstring id = randomId(0, $numEntities) ;
+
+						// convert coordinates to wkt string
+						rstring wktGeometry = point(longitude, latitude) ;
+
+						// submit to MapViewr, set upactionAction to 1 to add point to the map
+						submit({ id = id, wkt = wktGeometry, updateAction = 1u, note = "Mobile: "
+							+ wktGeometry, markerType = GREEN }, EntityStream) ;
+						block(0.01) ;
+					}
+
+				}
+
+		}
+
+		(stream<rstring jsonString> TupleToJSON_3_out0) as TupleToJSON_3 =
+			TupleToJSON(EntityStream)
+		{
+		}
+
+		() as MQTTSink_3 = MQTTSink(TupleToJSON_3_out0)
+		{
+			param
+				clientID : getSubmissionTimeValue("mqttClientID"); //"a:djelf1:gps_sim" ;
+				dataAttributeName : "jsonString" ;
+				userID : getSubmissionTimeValue("mqttUserID"); //"a-djelf1-geana5lrab" ;
+				password : getSubmissionTimeValue("mqttPassword"); //"+AIRiPbXw3pPvA1VBa" ;
+				topic : getSubmissionTimeValue("mqttTopics", "iot-2/type/simulator/id/sim/evt/0/fmt/json") ;
+				serverURI : getSubmissionTimeValue("mqttServerURI"); //"djelf1.messaging.internetofthings.ibmcloud.com:1883" ;			
+		}
+
+}
+
+

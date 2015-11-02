@@ -1,0 +1,230 @@
+namespace com.ibm.streamsx.insight.demo ;
+
+use com.ibm.streamsx.messaging.mqtt::MQTTSource ;
+use com.ibm.streamsx.json::JSONToTuple ;
+use com.ibm.streams.geospatial::Geofence ;
+use com.ibm.streamsx.messaging.kafka::KafkaProducer ;
+use com.ibm.streamsx.json::TupleToJSON ;
+use com.ibm.streamsx.messaging.kafka::KafkaConsumer ;
+
+composite GeoAnalysisCloud
+{
+	type
+		FenceID = rstring ;
+		EntityID = rstring ;
+		EntitySet = set<rstring> ;
+		Point = rstring id, rstring wkt ;
+		FenceData = rstring fenceId, int32 fenceUpdateAction, rstring fencePolygon ;
+		MatchedFences = tuple<list<rstring> fences, list<rstring> fencesEntered,
+			list<rstring> fencesExited> ;
+	graph
+		(stream<rstring jsonString> MQTTSource_4_out0) as MQTTSource_4 = MQTTSource()
+		{
+			param
+				clientID : getSubmissionTimeValue("mqttClientID"); //"a:djelf1:gps_sim" ;
+				userID : getSubmissionTimeValue("mqttUserID"); //"a-djelf1-geana5lrab" ;
+				password : getSubmissionTimeValue("mqttPassword"); //"+AIRiPbXw3pPvA1VBa" ;
+				topics : getSubmissionTimeValue("mqttTopics", "iot-2/type/simulator/id/sim/evt/0/fmt/json") ;
+				serverURI : getSubmissionTimeValue("mqttServerURI"); //"djelf1.messaging.internetofthings.ibmcloud.com:1883" ;			
+		}
+
+		(stream<MapViewerT> JSONToTuple_5_out0) as JSONToTuple_5 =
+			JSONToTuple(MQTTSource_4_out0)
+		{
+		}
+
+		(stream<rstring filename> FenceDir) as FenceDirScan = DirectoryScan()
+		{
+			param
+				directory : getThisToolkitDir() + "/etc/fences" ;
+				initDelay : 3.0 ;
+		}
+
+		stream<FenceData> PolygonStream = FileSource(FenceDir)
+		{
+			param
+				format : csv ;
+		}
+
+		stream<list<MapViewerT> objList> PolygonToMapViewer = Custom(PolygonStream,
+			Parse_13_out0)
+		{
+			logic
+				onTuple PolygonStream :
+				{
+					MapViewerT fencePt = { id = PolygonStream.fenceId, updateAction =(uint32)
+						fenceUpdateAction, note = "FencePt", wkt = PolygonStream.fencePolygon,
+						markerType = BLUE } ;
+					list<MapViewerT> fenceList = [ fencePt ] ;
+					submit({ objList = fenceList }, PolygonToMapViewer) ;
+				}
+
+		}
+
+		@parallel(width = 5)
+		(stream<Point, MatchedFences, tuple<map<rstring, rstring> allFences>>
+			GeofenceStream) as GeofenceOp = Geofence(JSONToTuple_5_out0 ; PolygonStream,
+			Parse_13_out0)
+		{
+			param
+				geometry : wkt ;
+				outputMode : events ;
+			output
+				GeofenceStream : fences = CurrentFences(), fencesEntered = FencesEntered(),
+					fencesExited = FencesExited(), allFences = AllFences() ;
+		}
+
+		(stream<list<MapViewerT> objList> UpdateStream) as Collector =
+			Custom(GeofenceExtStream as inPort0Alias)
+		{
+			logic
+				state :
+				{
+					mutable map<rstring, MapViewerT> objMap_ ;
+					mutable map<rstring, int32> fenceCount ;
+				}
+
+				onTuple inPort0Alias :
+				{
+				// update entity information
+					if(has(objMap_, id))
+					{
+						objMap_ [ id ].wkt = wkt ;
+					}
+
+					else
+					{
+						mutable MapViewerT entityData =(MapViewerT) { } ;
+						entityData.id = id ;
+						entityData.wkt = wkt ;
+						entityData.updateAction = 1u ;
+						entityData.note = "" ;
+						entityData.markerType = GREEN ;
+						objMap_ [ id ] = entityData ;
+					}
+
+					// update fence information
+					for(rstring fenceID in fenceMembers)
+					{
+						MARKER_TYPE marker = size(fenceMembers [ fenceID ]) > 0 ? RED : BLUE ;
+						if(has(objMap_, fenceID))
+						{
+							objMap_ [ fenceID ].markerType = marker ;
+							objMap_ [ fenceID ].note =(rstring) fenceMembers [ fenceID ] ;
+							objMap_ [ fenceID ].wkt = has(allFences, fenceID) ? allFences [ fenceID
+								] : "" ;
+						}
+
+						else
+						{
+							mutable MapViewerT fenceData =(MapViewerT) { } ;
+							fenceData.id = fenceID ;
+							fenceData.wkt = has(allFences, fenceID) ? allFences [ fenceID ] : "" ;
+							fenceData.updateAction = 1u ;
+							fenceData.note =(rstring) fenceMembers [ fenceID ] ;
+							fenceData.markerType = marker ;
+							objMap_ [ fenceID ] = fenceData ;
+						}
+
+					}
+
+					mutable list<MapViewerT> objList_ = [ ] ;
+					for(rstring objID in objMap_)
+					{
+						appendM(objList_, objMap_ [ objID ]) ;
+					}
+
+					submit({ objList = objList_ }, UpdateStream) ;
+				}
+
+		}
+
+		(stream<Point, MatchedFences, tuple<map<rstring, rstring> allFences,
+			map<FenceID, EntitySet> fenceMembers>> GeofenceExtStream) as
+			GeofenceExtension = Custom(GeofenceStream)
+		{
+			logic
+				state :
+				{
+					mutable map<FenceID, EntitySet> fenceEntityMap_ ;
+				}
+
+				onTuple GeofenceStream :
+				{
+					for(rstring fenceID in fencesEntered)
+					{
+						if(! has(fenceEntityMap_, fenceID))
+						{
+							fenceEntityMap_ [ fenceID ] =(set<rstring>) { } ;
+						}
+
+						insertM(fenceEntityMap_ [ fenceID ], id) ;
+					}
+
+					for(rstring fenceID in fencesExited)
+					{
+						if(has(fenceEntityMap_, fenceID) && has(fenceEntityMap_ [ fenceID ], id))
+						{
+							removeM(fenceEntityMap_ [ fenceID ], id) ;
+						}
+
+					}
+
+					mutable GeofenceExtStream out_ =(GeofenceExtStream) { } ;
+					assignFrom(out_, GeofenceStream) ;
+					out_.fenceMembers = fenceEntityMap_ ;
+					submit(out_, GeofenceExtStream) ;
+				}
+
+		}
+
+		() as KafkaProducer_9 = KafkaProducer(Functor_11_out0 as inPort0Alias)
+		{
+			param
+				messageAttribute : "jsonData" ;
+				propertiesFile : getThisToolkitDir() + "/etc/producer.properties" ;
+				topic : "demo" ;
+		}
+
+		(stream<rstring jsonData> TupleToJSON_10_out0) as TupleToJSON_10 =
+			TupleToJSON(PolygonToMapViewer, UpdateStream)
+		{
+		}
+
+		(stream<rstring jsonData, rstring key> Functor_11_out0) as OutputFunctor =
+			Functor(TupleToJSON_10_out0)
+		{
+			output
+				Functor_11_out0 : key = "geo" ;
+		}
+
+		(stream<rstring message> KafkaConsumer_12_out0) as KafkaConsumer_12 =
+			KafkaConsumer()
+		{
+			param
+				topic : "fences" ;
+				propertiesFile : getThisToolkitDir() + "/etc/consumer.properties" ;
+		}
+
+		(stream<FenceData> Parse_13_out0) as FenceParser = Parse(Functor_14_out0 as
+			inPort0Alias)
+		{
+			param
+				parseInput : msg ;
+				format : csv ;
+				parsing : permissive ;
+		}
+
+		(stream<blob msg> Functor_14_out0) as FenceFunctor =
+			Functor(KafkaConsumer_12_out0)
+		{
+			output
+				Functor_14_out0 : msg = convertToBlob(message) ;
+		}
+
+}
+
+
+
+
+
