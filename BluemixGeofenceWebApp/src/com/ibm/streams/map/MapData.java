@@ -1,5 +1,9 @@
 package com.ibm.streams.map;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -93,6 +97,12 @@ public class MapData {
 
 	private Properties getProperties() {
 		Properties props = new Properties();
+		try {
+			props.load(new FileInputStream(new File("msghub.properties")));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 		// SSL Configs
 		props.setProperty(SSLConfigs.SSL_PROTOCOL_CONFIG, "TLSv1.2");
 		props.setProperty(SSLConfigs.SSL_ENABLED_PROTOCOLS_CONFIG, "TLSv1.2");
@@ -107,13 +117,9 @@ public class MapData {
 		// Producer Configs
 		props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
 		props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
-		props.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka01-prod01.messagehub.services.us-south.bluemix.net:9093,kafka02-prod01.messagehub.services.us-south.bluemix.net:9093,kafka03-prod01.messagehub.services.us-south.bluemix.net:9093,kafka04-prod01.messagehub.services.us-south.bluemix.net:9093,kafka05-prod01.messagehub.services.us-south.bluemix.net:9093");
-		props.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "wkSJjYUqMU1HxpZtWmJU2nbUlnBDK6etTwJ1DUFyWJUL6nwk");
 		props.setProperty(ProducerConfig.ACKS_CONFIG, "-1");
 
 		// Consumer Configs
-		props.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka01-prod01.messagehub.services.us-south.bluemix.net:9093,kafka02-prod01.messagehub.services.us-south.bluemix.net:9093,kafka03-prod01.messagehub.services.us-south.bluemix.net:9093,kafka04-prod01.messagehub.services.us-south.bluemix.net:9093,kafka05-prod01.messagehub.services.us-south.bluemix.net:9093");
-		props.setProperty(ConsumerConfig.CLIENT_ID_CONFIG,"wkSJjYUqMU1HxpZtWmJU2nbUlnBDK6etTwJ1DUFyWJUL6nwk");
 		props.setProperty("group.id", UUID.randomUUID().toString());
 		
 		return props;

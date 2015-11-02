@@ -1,8 +1,0 @@
-applications:
-- path: JavaHelloWorldApp.war
-  memory: 512M
-  instances: 1
-  domain: mybluemix.net
-  name: InsightDemoJava
-  host: insightdemojava
-  disk_quota: 1024M

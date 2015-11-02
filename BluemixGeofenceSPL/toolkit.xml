@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<toolkitModel xmlns="http://www.ibm.com/xmlns/prod/streams/spl/toolkit" productVersion="4.0.1.0" xmlns:common="http://www.ibm.com/xmlns/prod/streams/spl/common" xmlns:ti="http://www.ibm.com/xmlns/prod/streams/spl/toolkitInfo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <toolkit name="BluemixGeofenceSample" requiredProductVersion="4.0.1.0" version="1.0.0">
+    <description/>
+    <uriTable>
+      <uri index="2" value="com.ibm.streamsx.insight.demo/Common.spl"/>
+      <uri index="3" value="com.ibm.streamsx.insight.demo/GeoAnalysisCloud.spl"/>
+      <uri index="1" value="com.ibm.streamsx.insight.demo/GPSGen.spl"/>
+    </uriTable>
+    <namespace name="com.ibm.streamsx.insight.demo">
+      <compositeOp column="11" line="10" name="GPSSimulator" potentialMain="true" uriIndex="1">
+        <parameter defaultValue="20" metaType="Expression" name="numEntities" optional="true" type="&lt;int32>"/>
+      </compositeOp>
+      <compositeOp column="11" line="10" name="GeoAnalysisCloud" potentialMain="true" uriIndex="3">
+        <type column="3" line="13" name="FenceID" type="rstring" uriIndex="3"/>
+        <type column="3" line="14" name="EntityID" type="rstring" uriIndex="3"/>
+        <type column="3" line="15" name="EntitySet" type="set&lt;rstring>" uriIndex="3"/>
+        <type column="3" line="16" name="Point" type="rstring id, rstring wkt" uriIndex="3"/>
+        <type column="3" line="17" name="FenceData" type="rstring fenceId, int32 fenceUpdateAction, rstring fencePolygon" uriIndex="3"/>
+        <type column="3" line="18" name="MatchedFences" type="tuple&lt;list&lt;rstring> fences, list&lt;rstring> fencesEntered, list&lt;rstring> fencesExited>" uriIndex="3"/>
+      </compositeOp>
+      <function column="1" line="13" name="randomLatitude" native="false" public="true" returnType="float64" stateful="true" uriIndex="2">
+        <description>Generate a random latitude value. </description>
+        <prototype>public stateful float64 randomLatitude(float64 min, float64 max)</prototype>
+        <parameter name="min" type="float64"/>
+        <parameter name="max" type="float64"/>
+      </function>
+      <function column="1" line="25" name="randomLongitude" native="false" public="true" returnType="float64" stateful="true" uriIndex="2">
+        <description>Generate a random longitude value. </description>
+        <prototype>public stateful float64 randomLongitude(float64 min, float64 max)</prototype>
+        <parameter name="min" type="float64"/>
+        <parameter name="max" type="float64"/>
+      </function>
+      <function column="1" line="37" name="randomId" native="false" public="true" returnType="rstring" stateful="true" uriIndex="2">
+        <description>Generate a random entity id </description>
+        <prototype>public stateful rstring randomId(int32 minId, int32 numEntities)</prototype>
+        <parameter name="minId" type="int32"/>
+        <parameter name="numEntities" type="int32"/>
+      </function>
+      <function column="1" line="49" name="randomPolygon" native="false" public="true" returnType="rstring" stateful="true" uriIndex="2">
+        <description>Generate a random polygon, in the shape of a rectangle</description>
+        <prototype>public stateful rstring randomPolygon()</prototype>
+      </function>
+      <type column="6" line="3" name="MARKER_TYPE" static="true" type="enum { GREEN, YELLOW, RED, BLUE }" uriIndex="2"/>
+      <type column="6" line="6" name="MapViewerT" static="true" type="rstring id, rstring wkt, uint32 updateAction, rstring note, MARKER_TYPE markerType" uriIndex="2"/>
+      <enumLiterals column="27" line="3" typeName="MARKER_TYPE" uriIndex="2">
+        <enum>GREEN</enum>
+        <enum>YELLOW</enum>
+        <enum>RED</enum>
+        <enum>BLUE</enum>
+      </enumLiterals>
+    </namespace>
+    <dependency>
+      <common:name>com.ibm.streamsx.messaging</common:name>
+      <common:version>[4.0.0,5.0.0)</common:version>
+    </dependency>
+    <dependency>
+      <common:name>com.ibm.streams.geospatial</common:name>
+      <common:version>[3.0.0,4.0.0)</common:version>
+    </dependency>
+    <dependency>
+      <common:name>com.ibm.streamsx.json</common:name>
+      <common:version>[1.1.0,2.0.0)</common:version>
+    </dependency>
+    <sabFiles>
+      <ti:include path="toolkit.xml" root="toolkitDir"/>
+      <ti:include path="impl/java/lib/**" root="toolkitDir"/>
+      <ti:include path="impl/java/bin/**" root="toolkitDir"/>
+      <ti:include path="impl/bin/**" root="toolkitDir"/>
+      <ti:include path="impl/lib/**" root="toolkitDir"/>
+      <ti:include path="impl/nl/*.dat" root="toolkitDir"/>
+      <ti:include path="etc/**" root="toolkitDir"/>
+      <ti:include path="lib/**" root="toolkitDir"/>
+      <ti:include path="nl/**" root="toolkitDir"/>
+      <ti:include path="opt/**" root="toolkitDir"/>
+    </sabFiles>
+  </toolkit>
+
+</toolkitModel>

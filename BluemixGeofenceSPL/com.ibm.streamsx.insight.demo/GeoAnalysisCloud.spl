@@ -21,11 +21,12 @@ composite GeoAnalysisCloud
 		(stream<rstring jsonString> MQTTSource_4_out0) as MQTTSource_4 = MQTTSource()
 		{
 			param
-				clientID : getSubmissionTimeValue("mqttClientID"); //"a:djelf1:gps_sim" ;
-				userID : getSubmissionTimeValue("mqttUserID"); //"a-djelf1-geana5lrab" ;
-				password : getSubmissionTimeValue("mqttPassword"); //"+AIRiPbXw3pPvA1VBa" ;
-				topics : getSubmissionTimeValue("mqttTopics", "iot-2/type/simulator/id/sim/evt/0/fmt/json") ;
-				serverURI : getSubmissionTimeValue("mqttServerURI"); //"djelf1.messaging.internetofthings.ibmcloud.com:1883" ;			
+				clientID : getSubmissionTimeValue("mqttClientID") ; //"a:djelf1:gps_sim" ;
+				userID : getSubmissionTimeValue("mqttUserID") ; //"a-djelf1-geana5lrab" ;
+				password : getSubmissionTimeValue("mqttPassword") ; //"+AIRiPbXw3pPvA1VBa" ;
+				topics : "iot-2/type/simulator/id/sim/evt/0/fmt/json" ;
+				serverURI : getSubmissionTimeValue("mqttServerURI") ; //"djelf1.messaging.internetofthings.ibmcloud.com:1883" ;			
+
 		}
 
 		(stream<MapViewerT> JSONToTuple_5_out0) as JSONToTuple_5 =
@@ -61,7 +62,6 @@ composite GeoAnalysisCloud
 
 		}
 
-		@parallel(width = 5)
 		(stream<Point, MatchedFences, tuple<map<rstring, rstring> allFences>>
 			GeofenceStream) as GeofenceOp = Geofence(JSONToTuple_5_out0 ; PolygonStream,
 			Parse_13_out0)
